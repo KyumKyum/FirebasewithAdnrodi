@@ -14,14 +14,19 @@ import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
 import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.DocumentChange;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 
 import java.util.List;
+
+import javax.annotation.Nullable;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -46,6 +51,43 @@ public class MainActivity extends AppCompatActivity {
         editTextPriority = findViewById(R.id.edit_text_priority);
         textViewData = findViewById(R.id.text_view_data);
 
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+
+        noteBookRef.addSnapshotListener(this, new EventListener<QuerySnapshot>() {
+            @Override
+            public void onEvent(@Nullable QuerySnapshot queryDocumentSnapshots, @Nullable FirebaseFirestoreException e) {
+                if (e != null) {
+                    return;
+                }
+
+                for(DocumentChange dc : queryDocumentSnapshots.getDocumentChanges()){
+                    DocumentSnapshot documentSnapshot = dc.getDocument();
+                    String docId = documentSnapshot.getId();
+                    int oldIndex = dc.getOldIndex(); // before the change; returns -1 if the document is not in the list.
+                    int newIndex = dc.getNewIndex(); // after the change; returns -1 if the document is not in the list.
+                    //Add new note: oldIndex = -1, newIndex = curPos; Delete note: oldIndex: prevPos, newIndex = -1;
+
+                    switch (dc.getType()){
+                        case ADDED:
+                            textViewData.append("\nAdded: " + docId + "\nOld Index: " + oldIndex + "\nNew Index" + newIndex);
+                            break;
+
+                        case MODIFIED:
+                            textViewData.append("\nModified: " + docId + "\nOld Index: " + oldIndex + "\nNew Index" + newIndex);
+                            break;
+
+                        case REMOVED:
+                            textViewData.append("\nRemoved: " + docId + "\nOld Index: " + oldIndex + "\nNew Index" + newIndex);
+                            break;
+                    }
+                }
+
+            }
+        });
     }
 
     public void addNote(View v) {
