@@ -1,6 +1,7 @@
 package com.example.firestoreinandroid;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.Bundle;
@@ -23,11 +24,10 @@ import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.firestore.Transaction;
 import com.google.firebase.firestore.WriteBatch;
 
 import java.util.List;
-
-import javax.annotation.Nullable;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -52,7 +52,7 @@ public class MainActivity extends AppCompatActivity {
         editTextPriority = findViewById(R.id.edit_text_priority);
         textViewData = findViewById(R.id.text_view_data);
 
-        executeTransactions();
+        executeTransaction();
     }
 
 
@@ -131,25 +131,25 @@ public class MainActivity extends AppCompatActivity {
                 });
     }
 
-    private void executeTransactions(){
-        WriteBatch batch = db.batch();
-        DocumentReference doc1 = noteBookRef.document("New Note");
-        DocumentReference doc2 = noteBookRef.document("Not Existing Note");
-        DocumentReference doc3 = noteBookRef.document("3BPSYIL67X6BgHN2OYGe");
-        DocumentReference doc4 = noteBookRef.document();
-
-        batch.set(doc1,new Note("New Note","New Note",1));
-       // batch.update(doc2, "title","Not Existing Note");
-        //Error case: Updating not existing document : nothing should be happen.
-        batch.delete(doc3);
-        batch.set(doc4,new Note("Added Note","Added Note",2));
-
-        batch.commit().addOnFailureListener(new OnFailureListener() {
+    private void executeTransaction(){
+        db.runTransaction(new Transaction.Function<Long>() {
+            @Nullable
             @Override
-            public void onFailure(@NonNull Exception e) {
-                textViewData.setText(e.toString());
+            public Long apply(@NonNull Transaction transaction) throws FirebaseFirestoreException {
+                DocumentReference exampleRef = noteBookRef.document("New Note");
+                DocumentSnapshot exampleSnapshot = transaction.get(exampleRef);
+                //Read Operation
+                long newPriority = exampleSnapshot.getLong("priority") + 1;
+                transaction.update(exampleRef,"priority",newPriority);
+                //Write Operation
+                //All operations are done in atomic.
+                return newPriority;
+            }
+        }).addOnSuccessListener(new OnSuccessListener<Long>() {
+            @Override
+            public void onSuccess(Long result) {
+                Toast.makeText(MainActivity.this, "New Priority: " + result, Toast.LENGTH_SHORT).show();
             }
         });
-
     }
 }
