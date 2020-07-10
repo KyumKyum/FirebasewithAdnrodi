@@ -52,7 +52,7 @@ public class MainActivity extends AppCompatActivity {
         editTextPriority = findViewById(R.id.edit_text_priority);
         textViewData = findViewById(R.id.text_view_data);
 
-        executeBatchWrite();
+        executeTransactions();
     }
 
 
@@ -131,7 +131,7 @@ public class MainActivity extends AppCompatActivity {
                 });
     }
 
-    private void executeBatchWrite(){
+    private void executeTransactions(){
         WriteBatch batch = db.batch();
         DocumentReference doc1 = noteBookRef.document("New Note");
         DocumentReference doc2 = noteBookRef.document("Not Existing Note");
