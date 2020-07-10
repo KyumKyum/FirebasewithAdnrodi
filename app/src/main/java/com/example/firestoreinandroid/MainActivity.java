@@ -53,42 +53,6 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    @Override
-    protected void onStart() {
-        super.onStart();
-
-        noteBookRef.addSnapshotListener(this, new EventListener<QuerySnapshot>() {
-            @Override
-            public void onEvent(@Nullable QuerySnapshot queryDocumentSnapshots, @Nullable FirebaseFirestoreException e) {
-                if (e != null) {
-                    return;
-                }
-
-                for(DocumentChange dc : queryDocumentSnapshots.getDocumentChanges()){
-                    DocumentSnapshot documentSnapshot = dc.getDocument();
-                    String docId = documentSnapshot.getId();
-                    int oldIndex = dc.getOldIndex(); // before the change; returns -1 if the document is not in the list.
-                    int newIndex = dc.getNewIndex(); // after the change; returns -1 if the document is not in the list.
-                    //Add new note: oldIndex = -1, newIndex = curPos; Delete note: oldIndex: prevPos, newIndex = -1;
-
-                    switch (dc.getType()){
-                        case ADDED:
-                            textViewData.append("\nAdded: " + docId + "\nOld Index: " + oldIndex + "\nNew Index" + newIndex);
-                            break;
-
-                        case MODIFIED:
-                            textViewData.append("\nModified: " + docId + "\nOld Index: " + oldIndex + "\nNew Index" + newIndex);
-                            break;
-
-                        case REMOVED:
-                            textViewData.append("\nRemoved: " + docId + "\nOld Index: " + oldIndex + "\nNew Index" + newIndex);
-                            break;
-                    }
-                }
-
-            }
-        });
-    }
 
     public void addNote(View v) {
         String title = editTextTitle.getText().toString();
