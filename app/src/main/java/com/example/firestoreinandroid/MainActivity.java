@@ -23,6 +23,7 @@ import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.firestore.WriteBatch;
 
 import java.util.List;
 
@@ -51,7 +52,9 @@ public class MainActivity extends AppCompatActivity {
         editTextPriority = findViewById(R.id.edit_text_priority);
         textViewData = findViewById(R.id.text_view_data);
 
+        executeBatchWrite();
     }
+
 
 
     public void addNote(View v) {
@@ -126,5 +129,27 @@ public class MainActivity extends AppCompatActivity {
                         }
                     }
                 });
+    }
+
+    private void executeBatchWrite(){
+        WriteBatch batch = db.batch();
+        DocumentReference doc1 = noteBookRef.document("New Note");
+        DocumentReference doc2 = noteBookRef.document("Not Existing Note");
+        DocumentReference doc3 = noteBookRef.document("3BPSYIL67X6BgHN2OYGe");
+        DocumentReference doc4 = noteBookRef.document();
+
+        batch.set(doc1,new Note("New Note","New Note",1));
+       // batch.update(doc2, "title","Not Existing Note");
+        //Error case: Updating not existing document : nothing should be happen.
+        batch.delete(doc3);
+        batch.set(doc4,new Note("Added Note","Added Note",2));
+
+        batch.commit().addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception e) {
+                textViewData.setText(e.toString());
+            }
+        });
+
     }
 }
