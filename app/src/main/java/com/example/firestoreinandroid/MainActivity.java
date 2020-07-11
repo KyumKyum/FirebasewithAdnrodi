@@ -20,7 +20,9 @@ import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -48,7 +50,7 @@ public class MainActivity extends AppCompatActivity {
         textViewData = findViewById(R.id.text_view_data);
         editTextTags = findViewById(R.id.edit_text_tags);
 
-        updateArray();
+        updateNestedValue();
     }
 
 
@@ -65,7 +67,11 @@ public class MainActivity extends AppCompatActivity {
 
         String tagInput = editTextTags.getText().toString();
         String[] tagArray = tagInput.split("\\s*,\\s*");
-        List<String> tags = Arrays.asList(tagArray);
+        Map<String,Boolean> tags = new HashMap<>();
+
+        for(String tag : tagArray){
+            tags.put(tag,true);
+        }
 
         Note note = new Note(title, description, priority, tags);
 
@@ -85,7 +91,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void loadNotes(View v) {
-        noteBookRef.whereArrayContains("tags","tag5")//Before sdk 17, query on array was not possible
+        noteBookRef.whereEqualTo("tags.tag0",true)//Before sdk 17, query on array was not possible
                 .get()
                 .addOnSuccessListener(new OnSuccessListener<QuerySnapshot>() {
                     @Override
@@ -99,7 +105,7 @@ public class MainActivity extends AppCompatActivity {
 
                             data += "ID: " + docId;
 
-                            for(String tag: note.getTags()){
+                            for(String tag: note.getTags().keySet()){
                                 data += "\n-"+tag;
                             }
 
@@ -111,11 +117,10 @@ public class MainActivity extends AppCompatActivity {
                 });
     }
 
-    private void updateArray(){
-        noteBookRef.document("FbVGmusOXNFJz0sBL14z")
-                //.update("tags", FieldValue.arrayUnion("New Value"));
-                //Adding tags; it will be added only if the element called 'new Tags' doesn't exist.
-                .update("tags",FieldValue.arrayRemove("New Value"));
-                //Removing tags; Not removing in position - problematic in multi-user condition.
+    private void updateNestedValue(){
+        noteBookRef.document("oY7kI5Z2NGBaCy1L9OCV")
+                //.update("tags.tag1", FieldValue.arrayUnion(false))
+                //.update("tags.tag1",FieldValue.delete());
+                .update("tags.tag1.a.b",FieldValue.arrayUnion(true));
     }
 }
