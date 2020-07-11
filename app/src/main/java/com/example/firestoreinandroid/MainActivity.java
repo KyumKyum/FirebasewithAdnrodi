@@ -12,22 +12,16 @@ import android.widget.Toast;
 
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.android.gms.tasks.Task;
-import com.google.android.gms.tasks.Tasks;
 import com.google.firebase.firestore.CollectionReference;
-import com.google.firebase.firestore.DocumentChange;
 import com.google.firebase.firestore.DocumentReference;
-import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.EventListener;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.FirebaseFirestoreException;
-import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
-import com.google.firebase.firestore.Transaction;
-import com.google.firebase.firestore.WriteBatch;
 
+import java.util.Arrays;
 import java.util.List;
+
 
 public class MainActivity extends AppCompatActivity {
 
@@ -35,12 +29,13 @@ public class MainActivity extends AppCompatActivity {
     private EditText editTextTitle;
     private EditText editTextDescription;
     private EditText editTextPriority;
+    private EditText editTextTags;
     private TextView textViewData;
 
     //References
     private FirebaseFirestore db = FirebaseFirestore.getInstance();
     private CollectionReference noteBookRef = db.collection("Notebook");
-    private DocumentSnapshot lastResult;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,8 +46,9 @@ public class MainActivity extends AppCompatActivity {
         editTextDescription = findViewById(R.id.edit_text_description);
         editTextPriority = findViewById(R.id.edit_text_priority);
         textViewData = findViewById(R.id.text_view_data);
+        editTextTags = findViewById(R.id.edit_text_tags);
 
-        executeTransaction();
+        updateArray();
     }
 
 
@@ -67,11 +63,11 @@ public class MainActivity extends AppCompatActivity {
 
         int priority = Integer.parseInt(editTextPriority.getText().toString());
 
-        //Map<String,Object> note = new HashMap<>();
-        //note.put(KEY_TITLE,title);
-        //note.put(KEY_DESCRIPTION,description);
+        String tagInput = editTextTags.getText().toString();
+        String[] tagArray = tagInput.split("\\s*,\\s*");
+        List<String> tags = Arrays.asList(tagArray);
 
-        Note note = new Note(title, description, priority);
+        Note note = new Note(title, description, priority, tags);
 
         noteBookRef.add(note)
                 .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
@@ -89,67 +85,37 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void loadNotes(View v) {
-
-        Query query;
-
-        if (lastResult == null) {
-            query = noteBookRef.orderBy("priority")
-                    .limit(3);
-        } else {
-            query = noteBookRef.orderBy("priority")
-                    .startAfter(lastResult)
-                    .limit(3);
-        }
-
-        query.get()
+        noteBookRef.whereArrayContains("tags","tag5")//Before sdk 17, query on array was not possible
+                .get()
                 .addOnSuccessListener(new OnSuccessListener<QuerySnapshot>() {
                     @Override
                     public void onSuccess(QuerySnapshot queryDocumentSnapshots) {
                         String data = "";
 
-                        for (QueryDocumentSnapshot documentSnapshot : queryDocumentSnapshots) {
+                        for(QueryDocumentSnapshot documentSnapshot : queryDocumentSnapshots){
                             Note note = documentSnapshot.toObject(Note.class);
                             note.setDocumentID(documentSnapshot.getId());
-
                             String docId = note.getDocumentID();
-                            String title = note.getTitle();
-                            String description = note.getDescription();
-                            int priority = note.getPriority();
 
-                            data += "ID: " + docId + "\nTitle: " + title + "\nDescription: " + description
-                                    + "\nPriority: " + priority + "\n\n";
+                            data += "ID: " + docId;
+
+                            for(String tag: note.getTags()){
+                                data += "\n-"+tag;
+                            }
+
+                            data += "\n\n";
                         }
 
-                        if (queryDocumentSnapshots.size() > 0) {
-                            data += "*******************\n\n";
-
-                            textViewData.append(data);
-
-                            lastResult = queryDocumentSnapshots.getDocuments().get(queryDocumentSnapshots.size() - 1);
-                        }
+                        textViewData.setText(data);
                     }
                 });
     }
 
-    private void executeTransaction(){
-        db.runTransaction(new Transaction.Function<Long>() {
-            @Nullable
-            @Override
-            public Long apply(@NonNull Transaction transaction) throws FirebaseFirestoreException {
-                DocumentReference exampleRef = noteBookRef.document("New Note");
-                DocumentSnapshot exampleSnapshot = transaction.get(exampleRef);
-                //Read Operation
-                long newPriority = exampleSnapshot.getLong("priority") + 1;
-                transaction.update(exampleRef,"priority",newPriority);
-                //Write Operation
-                //All operations are done in atomic.
-                return newPriority;
-            }
-        }).addOnSuccessListener(new OnSuccessListener<Long>() {
-            @Override
-            public void onSuccess(Long result) {
-                Toast.makeText(MainActivity.this, "New Priority: " + result, Toast.LENGTH_SHORT).show();
-            }
-        });
+    private void updateArray(){
+        noteBookRef.document("FbVGmusOXNFJz0sBL14z")
+                //.update("tags", FieldValue.arrayUnion("New Value"));
+                //Adding tags; it will be added only if the element called 'new Tags' doesn't exist.
+                .update("tags",FieldValue.arrayRemove("New Value"));
+                //Removing tags; Not removing in position - problematic in multi-user condition.
     }
 }
