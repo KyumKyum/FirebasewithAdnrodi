@@ -50,7 +50,6 @@ public class MainActivity extends AppCompatActivity {
         textViewData = findViewById(R.id.text_view_data);
         editTextTags = findViewById(R.id.edit_text_tags);
 
-        updateNestedValue();
     }
 
 
@@ -75,7 +74,10 @@ public class MainActivity extends AppCompatActivity {
 
         Note note = new Note(title, description, priority, tags);
 
-        noteBookRef.add(note)
+        noteBookRef.document("czBnQKJSv6mt2MXkmiG9")
+                .collection("SubCollection").add(note);
+
+        /*noteBookRef.add(note)
                 .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
                     @Override
                     public void onSuccess(DocumentReference documentReference) {
@@ -87,11 +89,12 @@ public class MainActivity extends AppCompatActivity {
                     public void onFailure(@NonNull Exception e) {
                         Toast.makeText(MainActivity.this, "ERROR!", Toast.LENGTH_SHORT).show();
                     }
-                });
+                });*/
     }
 
     public void loadNotes(View v) {
-        noteBookRef.whereEqualTo("tags.tag0",true)//Before sdk 17, query on array was not possible
+        noteBookRef.document("czBnQKJSv6mt2MXkmiG9")
+                .collection("SubCollection")
                 .get()
                 .addOnSuccessListener(new OnSuccessListener<QuerySnapshot>() {
                     @Override
@@ -117,10 +120,5 @@ public class MainActivity extends AppCompatActivity {
                 });
     }
 
-    private void updateNestedValue(){
-        noteBookRef.document("oY7kI5Z2NGBaCy1L9OCV")
-                //.update("tags.tag1", FieldValue.arrayUnion(false))
-                //.update("tags.tag1",FieldValue.delete());
-                .update("tags.tag1.a.b",FieldValue.arrayUnion(true));
-    }
+
 }
